@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - E-Signature Rapor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      #signature-canvas {
+        border: 2px dashed #cbd5e1;
+        border-radius: 0.5rem;
+        cursor: crosshair;
+        width: 100%;
+        background-color: #fff; /* Tambahkan background putih untuk canvas */
+      }
+    </style>
+  </head>
+  <body class="bg-slate-100 antialiased">
+    <!-- Loading state -->
+    <div
+      id="loading-overlay"
+      class="fixed inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-50"
+    >
+      <p class="text-slate-600 font-semibold">Memuat data pengguna...</p>
+    </div>
+
+    <!-- Main Container -->
+    <div id="app-container" class="hidden">
+      <!-- Header -->
+      <header class="bg-white shadow-md">
+        <div
+          class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center"
+        >
+          <h1 class="text-xl font-bold text-slate-800">
+            Dashboard Tanda Tangan
+          </h1>
+          <div>
+            <span
+              id="user-id-display"
+              class="text-xs text-slate-500 mr-4"
+            ></span>
+            <button
+              id="logoutButton"
+              class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+      <!-- Main Content -->
+      <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          <!-- Form Section -->
+          <div class="lg:col-span-2">
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+              <h2 class="text-lg font-bold text-slate-800 mb-4">
+                Buat Tanda Tangan Baru
+              </h2>
+              <form id="signatureForm">
+                <div class="space-y-4">
+                  <!-- ... (Form fields - no changes needed here) ... -->
+                  <div>
+                    <label
+                      for="signerName"
+                      class="block text-sm font-medium text-slate-700"
+                      >Nama Penanda Tangan</label
+                    >
+                    <input
+                      type="text"
+                      id="signerName"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="foundationId"
+                      class="block text-sm font-medium text-slate-700"
+                      >Nomer Induk Yayasan (NIY)</label
+                    >
+                    <input
+                      type="text"
+                      id="foundationId"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="position"
+                      class="block text-sm font-medium text-slate-700"
+                      >Jabatan</label
+                    >
+                    <input
+                      type="text"
+                      id="position"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="decreeNumber"
+                      class="block text-sm font-medium text-slate-700"
+                      >Nomer SK</label
+                    >
+                    <input
+                      type="text"
+                      id="decreeNumber"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="documentName"
+                      class="block text-sm font-medium text-slate-700"
+                      >Nama Dokumen</label
+                    >
+                    <input
+                      type="text"
+                      id="documentName"
+                      required
+                      class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700"
+                      >Tanda Tangan</label
+                    >
+                    <canvas id="signature-canvas" height="200"></canvas>
+                    <div class="mt-2">
+                      <button
+                        type="button"
+                        id="clearSignature"
+                        class="text-sm text-slate-600 hover:text-slate-800"
+                      >
+                        Hapus Tanda Tangan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-6">
+                  <button
+                    type="submit"
+                    id="saveSignature"
+                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Simpan
+                  </button>
+                </div>
+                <div id="form-feedback" class="mt-4 text-sm text-center"></div>
+              </form>
+            </div>
+          </div>
+          <!-- Data List Section -->
+          <div class="lg:col-span-3">
+            <div class="bg-white p-6 rounded-xl shadow-lg min-h-full">
+              <h2 class="text-lg font-bold text-slate-800 mb-4">
+                Data Tanda Tangan Tersimpan
+              </h2>
+              <div id="signatureList" class="space-y-4">
+                <p class="text-slate-500 text-center py-8">Memuat data...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        collection,
+        addDoc,
+        onSnapshot,
+        setDoc,
+        serverTimestamp,
+        query,
+      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+      // ... (Firebase config - no changes)
+      const firebaseConfig = {
+        apiKey: "AIzaSyB_eFnAlQDAABFc_F_Vzaj3gfiynp-e5OQ",
+        authDomain: "sekolahanaksaleh-esign.firebaseapp.com",
+        projectId: "sekolahanaksaleh-esign",
+        storageBucket: "sekolahanaksaleh-esign.firebasestorage.app",
+        messagingSenderId: "196646097242",
+        appId: "1:196646097242:web:e50cec36c234f35c9ca363",
+      };
+      const appId =
+        typeof __app_id !== "undefined" ? __app_id : "default-e-signature-app";
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      let userId, signaturePad;
+      const ui = {
+        // ... (UI elements - no changes)
+        loadingOverlay: document.getElementById("loading-overlay"),
+        appContainer: document.getElementById("app-container"),
+        logoutButton: document.getElementById("logoutButton"),
+        userIdDisplay: document.getElementById("user-id-display"),
+        signatureForm: document.getElementById("signatureForm"),
+        clearSignatureButton: document.getElementById("clearSignature"),
+        saveSignatureButton: document.getElementById("saveSignature"),
+        formFeedback: document.getElementById("form-feedback"),
+        signatureList: document.getElementById("signatureList"),
+      };
+
+      // --- AUTH GUARD (no changes) ---
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          userId = user.uid;
+          ui.userIdDisplay.textContent = `User ID: ${userId}`;
+          ui.loadingOverlay.classList.add("hidden");
+          ui.appContainer.classList.remove("hidden");
+          initializeDashboard();
+          listenToSignatures();
+        } else {
+          window.location.href = "./index.html";
+        }
+      });
+
+      // --- DASHBOARD LOGIC (MODIFIED) ---
+      function initializeDashboard() {
+        const canvas = document.getElementById("signature-canvas");
+        const ctx = canvas.getContext("2d");
+
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        ctx.scale(ratio, ratio);
+
+        // --- LOGIKA BARU UNTUK LATAR BELAKANG STEMPEL ---
+
+        // GANTI DENGAN URL GAMBAR STEMPEL ANDA (PNG TRANSPARAN)
+        const stampImageUrl = "https://i.imgur.com/AxEmEGo.png";
+        const stampImage = new Image();
+        stampImage.crossOrigin = "anonymous"; // Penting jika gambar dari domain lain
+        stampImage.src = stampImageUrl;
+
+        // Fungsi untuk menggambar stempel dan mereset canvas
+        const resetCanvasWithStamp = () => {
+          // Bersihkan canvas sepenuhnya
+          ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+          // Gambar stempel di tengah
+          // Anda bisa menyesuaikan ukuran dan posisi stempel di sini
+          const stampWidth = 100;
+          const stampHeight = 100;
+          const x = canvas.offsetWidth / 2 - stampWidth / 2;
+          const y = canvas.offsetHeight / 2 - stampHeight / 2;
+          ctx.drawImage(stampImage, x, y, stampWidth, stampHeight);
+        };
+
+        // Tunggu gambar stempel selesai dimuat
+        stampImage.onload = () => {
+          // Gambar stempel untuk pertama kali
+          resetCanvasWithStamp();
+
+          // Inisialisasi SignaturePad SETELAH stempel digambar
+          // Gunakan background transparan agar tidak menutupi stempel
+          signaturePad = new SignaturePad(canvas, {
+            backgroundColor: "rgba(255, 255, 255, 0)",
+          });
+
+          // Setel ulang tombol "Hapus"
+          ui.clearSignatureButton.addEventListener("click", () => {
+            // Membersihkan goresan tanda tangan
+            signaturePad.clear();
+            // Menggambar kembali stempelnya
+            resetCanvasWithStamp();
+          });
+        };
+
+        // Jika gambar gagal dimuat, fallback ke fungsionalitas normal
+        stampImage.onerror = () => {
+          console.error("Gagal memuat gambar stempel.");
+          signaturePad = new SignaturePad(canvas, {
+            backgroundColor: "rgb(255, 255, 255)",
+          });
+          ui.clearSignatureButton.addEventListener("click", () =>
+            signaturePad.clear()
+          );
+        };
+
+        // Event listener lainnya (form, logout, dll.)
+        ui.signatureForm.addEventListener("submit", handleSaveSignature);
+        ui.logoutButton.addEventListener("click", () => signOut(auth));
+      }
+
+      async function handleSaveSignature(e) {
+        e.preventDefault();
+        // Validasi untuk memastikan tanda tangan tidak kosong
+        if (signaturePad.isEmpty()) {
+          alert("Tanda tangan tidak boleh kosong.");
+          return;
+        }
+
+        // ... (Sisa fungsi handleSaveSignature tidak perlu diubah)
+        ui.saveSignatureButton.disabled = true;
+        ui.saveSignatureButton.textContent = "Menyimpan...";
+
+        try {
+          // toDataURL akan otomatis menangkap canvas beserta stempel dan tanda tangan
+          const signatureImage = signaturePad.toDataURL("image/png");
+          const validationId = crypto.randomUUID();
+          const signatureData = {
+            signerName: document.getElementById("signerName").value,
+            foundationId: document.getElementById("foundationId").value,
+            position: document.getElementById("position").value,
+            decreeNumber: document.getElementById("decreeNumber").value,
+            documentName: document.getElementById("documentName").value,
+            signatureImage,
+            validationId,
+            createdAt: serverTimestamp(),
+            authorId: userId,
+          };
+
+          const privateCollectionPath = `/artifacts/${appId}/users/${userId}/signatures`;
+          const publicDocPath = `/artifacts/${appId}/public/data/validations/${validationId}`;
+
+          await addDoc(collection(db, privateCollectionPath), signatureData);
+          await setDoc(doc(db, publicDocPath), signatureData);
+
+          ui.formFeedback.textContent = "Data berhasil disimpan!";
+          ui.formFeedback.className = "mt-4 text-sm text-center text-green-600";
+          ui.signatureForm.reset();
+          signaturePad.clear(); // Hapus tanda tangan
+          document.getElementById("clearSignature").click(); // Panggil event klik untuk menggambar ulang stempel
+        } catch (error) {
+          console.error("Save Error:", error);
+          ui.formFeedback.textContent = "Gagal menyimpan data.";
+          ui.formFeedback.className = "mt-4 text-sm text-center text-red-600";
+        } finally {
+          ui.saveSignatureButton.disabled = false;
+          ui.saveSignatureButton.textContent = "Simpan";
+          setTimeout(() => (ui.formFeedback.textContent = ""), 3000);
+        }
+      }
+
+      // ... (Fungsi listenToSignatures dan createSignatureCard tidak perlu diubah)
+      function listenToSignatures() {
+        if (!userId) return;
+        const q = query(
+          collection(db, `/artifacts/${appId}/users/${userId}/signatures`)
+        );
+
+        onSnapshot(q, (snapshot) => {
+          if (snapshot.empty) {
+            ui.signatureList.innerHTML = `<p class="text-slate-500 text-center py-8">Belum ada data.</p>`;
+            return;
+          }
+
+          ui.signatureList.innerHTML = "";
+          const docs = snapshot.docs.sort(
+            (a, b) =>
+              (b.data().createdAt?.toMillis() || 0) -
+              (a.data().createdAt?.toMillis() || 0)
+          );
+
+          docs.forEach((doc) => {
+            const data = doc.data();
+            const card = createSignatureCard(doc.id, data);
+            ui.signatureList.appendChild(card);
+
+            const qrCodeEl = document.getElementById(`qr-${doc.id}`);
+            const validationUrl = `${window.location.origin}/validasi.html?id=${data.validationId}`;
+
+            const qrCode = new QRCodeStyling({
+              width: 150,
+              height: 150,
+              type: "svg",
+              data: validationUrl,
+              image: "https://i.imgur.com/8Ksu8Dz.png",
+              dotsOptions: { color: "#3730a3", type: "rounded" },
+              imageOptions: {
+                crossOrigin: "anonymous",
+                margin: 10,
+                imageSize: 0.4,
+              },
+            });
+            qrCode.append(qrCodeEl);
+
+            // --- LOGIKA BARU UNTUK TOMBOL DOWNLOAD ---
+            const downloadButton = document.getElementById(
+              `download-qr-${doc.id}`
+            );
+            if (downloadButton) {
+              downloadButton.addEventListener("click", () => {
+                const filename = `qrcode-${data.signerName
+                  .replace(/[^a-z0-9]/gi, "_")
+                  .toLowerCase()}`;
+                qrCode.download({
+                  name: filename,
+                  extension: "png",
+                });
+              });
+            }
+          });
+        });
+      }
+
+      function createSignatureCard(id, data) {
+        const card = document.createElement("div");
+        card.className =
+          "p-4 border border-slate-200 rounded-lg bg-slate-50 flex flex-col sm:flex-row gap-4 items-start";
+        const timestamp = data.createdAt?.toDate
+          ? data.createdAt.toDate().toLocaleString("id-ID")
+          : "N/A";
+        card.innerHTML = `
+                <div class="flex-grow">
+                    <p class="font-bold text-indigo-700">${data.documentName}</p>
+                    <p class="text-sm text-slate-600">Oleh: <strong>${data.signerName}</strong> (${data.position})</p>
+                    <p class="text-xs text-slate-400 mt-1">Dibuat pada: ${timestamp}</p>
+                </div>
+                <div class="flex flex-col items-center p-2 bg-white rounded-md shadow-inner">
+                    <div id="qr-${id}"></div>
+                    <p class="text-xs text-slate-500 mt-2">Scan untuk validasi</p>
+                    <button id="download-qr-${id}" class="mt-2 text-xs bg-gray-200 text-gray-800 font-medium py-1 px-3 rounded-full hover:bg-gray-300 transition-colors">
+                        Download
+                    </button>
+                </div>`;
+        return card;
+      }
+    </script>
+  </body>
+</html>
