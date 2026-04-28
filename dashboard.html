@@ -163,18 +163,25 @@
                 userId = user.uid;
                 ui.userIdDisplay.textContent = `User ID: ${userId}`;
 
-                // --- Logika untuk Logo Khusus PAUD ---
+                // --- Logika untuk Logo Khusus PAUD dan SMP ---
+                const userEmail = user.email ? user.email.toLowerCase() : '';
                 const PAUD_EMAIL = 'paud@sekolahanaksaleh.sch.id';
+                const SMP_EMAIL = 'official.smp@sekolahanaksaleh.sch.id';
                 
-                // GANTI DENGAN URL LOGO ANDA
-                const PAUD_LOGO_URL = 'https://i.imgur.com/4M3RIZo.png'; // <-- GANTI URL LOGO PAUD
-                const DEFAULT_LOGO_URL = 'https://i.imgur.com/8Ksu8Dz.png'; // <-- GANTI URL LOGO SEKOLAH BIASA
+                const PAUD_LOGO_URL = 'https://i.imgur.com/4M3RIZo.png';
+                const SMP_LOGO_URL = 'https://i.imgur.com/L5Jxie4.png';
+                const DEFAULT_LOGO_URL = 'https://i.imgur.com/8Ksu8Dz.png';
 
-                if (user.email === PAUD_EMAIL) {
+                if (userEmail === PAUD_EMAIL) {
                     currentUserLogoUrl = PAUD_LOGO_URL;
+                } else if (userEmail === SMP_EMAIL) {
+                    currentUserLogoUrl = SMP_LOGO_URL;
                 } else {
                     currentUserLogoUrl = DEFAULT_LOGO_URL;
                 }
+                
+                console.log("Logged in as:", userEmail);
+                console.log("Using logo URL:", currentUserLogoUrl);
 
                 ui.loadingOverlay.classList.add('hidden');
                 ui.appContainer.classList.remove('hidden');
